@@ -1,11 +1,16 @@
-if platform?( "redhat", "centos", "fedora" )
-  package "apr-devel"
-  package "libconfuse-devel"
-  package "expat-devel"
-  package "rrdtool-devel"
+case node[:platform_family]
+when "redhat", "centos", "fedora"
+  %w{ apr-devel libconfuse-devel expat-devel rrdtool-devel }.each do |p|
+    package p
+  end
+when "debian"
+  %w{ librrd-dev librrd4 libapr1-dev libconfuse-dev libexpat1-dev }.each do |p|
+    package p
+  end
 end
 
 remote_file "/usr/src/ganglia-#{node['ganglia']['version']}.tar.gz" do
+  puts "Getting Ganglia-GMetad from: #{node[:ganglia][:uri]}"
   source node['ganglia']['uri']
   checksum node['ganglia']['checksum']
 end
@@ -19,7 +24,7 @@ execute "untar ganglia" do
 end
 
 execute "configure ganglia build" do
-  command "./configure --with-gmetad --with-libpcre=no --sysconfdir=/etc/ganglia"
+  command "./configure --sysconfdir=/etc/ganglia --prefix=/usr"
   creates "#{src_path}/config.log"
   cwd src_path
 end
@@ -30,10 +35,16 @@ execute "build ganglia" do
   cwd src_path
 end
 
-execute "install ganglia" do
+execute "install gmond" do
   command "make install"
   creates "/usr/sbin/gmond"
   cwd src_path
+end
+
+execute "install gmetad" do
+  command "make install"
+  creates "/usr/sbin/gmetad"
+  cwd "#{src_path}/gmetad"
 end
 
 link "/usr/lib/ganglia" do
