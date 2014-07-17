@@ -1,4 +1,4 @@
-case node[:platform_family]
+case node['platform_family']
 when "redhat", "centos", "fedora"
   %w{ apr-devel libconfuse-devel expat-devel rrdtool-devel }.each do |p|
     package p
