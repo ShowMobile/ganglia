@@ -26,7 +26,7 @@ else
   end
 end
 
-directory "/var/lib/ganglia/rrds" do
+directory node['ganglia']['rrd_rootdir']
   owner node['ganglia']['user']
   recursive true
 end
