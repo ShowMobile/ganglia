@@ -26,7 +26,7 @@ else
   end
 end
 
-directory node['ganglia']['rrd_rootdir']
+directory node['ganglia']['rrd_rootdir'] do
   owner node['ganglia']['user']
   recursive true
 end
