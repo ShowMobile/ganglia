@@ -1,13 +1,28 @@
-case node['platform']
-when "ubuntu", "debian"
-  package "gmetad"
-when "redhat", "centos", "fedora"
-  include_recipe "ganglia::source"
-  execute "copy gmetad init script" do
-    command "cp " +
-      "/usr/src/ganglia-#{node['ganglia']['version']}/gmetad/gmetad.init " +
-      "/etc/init.d/gmetad"
-    not_if "test -f /etc/init.d/gmetad"
+
+unless node['ganglia']['install_method'].nil?
+  case node['platform']
+  when "ubuntu", "debian"
+    package "gmetad"
+  when "redhat", "centos", "fedora"
+    include_recipe "ganglia::source"
+    execute "copy gmetad init script" do
+      command "cp " +
+              "/usr/src/ganglia-#{node['ganglia']['version']}/gmetad/gmetad.init " +
+              "/etc/init.d/gmetad"
+      not_if "test -f /etc/init.d/gmetad"
+    end
+  end
+else
+  if node['ganglia']['install_method'] == "source"
+    include_recipe "ganglia::source"
+    execute "copy gmetad init script" do
+      command "cp " +
+              "/usr/src/ganglia-#{node['ganglia']['version']}/gmetad/gmetad.init " +
+              "/etc/init.d/gmetad"
+      not_if "test -f /etc/init.d/gmetad"
+    end
+  else
+    package "gmetad"
   end
 end
 
@@ -31,14 +46,14 @@ if node['ganglia']['enable_rrdcached'] == true
   runit_service "rrdcached" do
     template_name "rrdcached"
     options({
-      :user => node['ganglia']['rrdcached']['user'],
-      :main_socket => node['ganglia']['rrdcached']['main_socket'],
-      :limited_socket => node['ganglia']['rrdcached']['limited_socket'],
-      :ganglia_rrds => node['ganglia']['rrdcached']['ganglia_rrds'],
-      :timeout => node['ganglia']['rrdcached']['timeout'],
-      :delay => node['ganglia']['rrdcached']['delay'],
-      }
-    )
+              :user => node['ganglia']['rrdcached']['user'],
+              :main_socket => node['ganglia']['rrdcached']['main_socket'],
+              :limited_socket => node['ganglia']['rrdcached']['limited_socket'],
+              :ganglia_rrds => node['ganglia']['rrdcached']['ganglia_rrds'],
+              :timeout => node['ganglia']['rrdcached']['timeout'],
+              :delay => node['ganglia']['rrdcached']['delay'],
+            }
+           )
   end
   # install socat to make it easy to talk to rrdcached for diagnostics.
   package "socat" do
