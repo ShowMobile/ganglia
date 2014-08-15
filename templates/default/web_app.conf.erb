@@ -20,8 +20,8 @@
     ServerAlias <% @params[:server_aliases].each do |a| %><%= a %> <% end %>
 
     SSLEngine on
-    SSLCertificateFile <%= node[:deployer][:certificate][:dir] %>/sslcert.crt
-    SSLCertificateKeyFile <%= node[:deployer][:certificate][:dir] %>/sslcert.key
+    SSLCertificateFile <%= node[:deployer][:certificate][:file] %>
+    SSLCertificateKeyFile <%= node[:deployer][:certificate][:key] %>
 
     DocumentRoot <%= node[:ganglia][:web][:install_path] %>
     <Directory <%= node[:ganglia][:web][:install_path] %>>
