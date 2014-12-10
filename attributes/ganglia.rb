@@ -16,6 +16,8 @@ default['ganglia']['grid_name'] = "MyGrid"
 default['ganglia']['unicast'] = false
 default['ganglia']['server_role'] = "monitoring"
 
+default['ganglia']['extra_environments'] = []
+
 default['ganglia']['user'] = "nobody"
 default['ganglia']['rrd_rootdir'] = "/var/lib/ganglia/rrds"
 

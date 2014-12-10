@@ -1,6 +1,6 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          ganglia-monitor-<%= @cluster_name %>
+# Provides:          ganglia-monitor
 # Required-Start:    $network $named $remote_fs $syslog
 # Required-Stop:     $network $named $remote_fs $syslog
 # Default-Start:     2 3 4 5
@@ -8,9 +8,9 @@
 ### END INIT INFO
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/gmond
-NAME=gmond-<%= @cluster_name %>
+NAME=gmond
 DESC="Ganglia Monitor Daemon"
-CONF=/etc/ganglia/gmond_collector_<%= @cluster_name %>.conf
+CONF=/etc/ganglia/gmond.conf
 
 test -x $DAEMON || exit 0
 
@@ -26,7 +26,7 @@ case "$1" in
   stop)
   echo -n "Stopping $DESC: "
   start-stop-daemon --stop  --quiet --oknodo \
-    --pidfile /var/run/${NAME}.pid 2>&1 > /dev/null
+    --pidfile /var/run/${NAME}.pid --name $NAME 2>&1 > /dev/null
   echo "$NAME."
   ;;
   reload)

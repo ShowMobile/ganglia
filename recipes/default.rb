@@ -16,23 +16,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-case node['platform']
-when "ubuntu", "debian"
-  package "ganglia-monitor"
-when "redhat", "centos", "fedora"
-  include_recipe "ganglia::source"
-
-  execute "copy ganglia-monitor init script" do
-    command "cp " +
-      "/usr/src/ganglia-#{node['ganglia']['version']}/gmond/gmond.init " +
-      "/etc/init.d/ganglia-monitor"
-    not_if "test -f /etc/init.d/ganglia-monitor"
+if node['ganglia']['install_method'].nil?
+  case node['platform']
+  when "ubuntu", "debian"
+    package "ganglia-monitor"
+  when "redhat", "centos", "fedora"
+    include_recipe "ganglia::source"
+    execute "copy ganglia-monitor init script" do
+      command "cp " +
+              "/usr/src/ganglia-#{node['ganglia']['version']}/gmond/gmond.init " +
+              "/etc/init.d/ganglia-monitor"
+      not_if "test -f /etc/init.d/ganglia-monitor"
+    end
+    user "ganglia"
   end
-
-  user "ganglia"
+else
+  if node['ganglia']['install_method'] == "source"
+    include_recipe "ganglia::source"
+    template "/etc/init.d/ganglia-monitor" do
+      source "ganglia-monitor-init.erb"
+      mode 0755
+      notifies :restart, "service[ganglia-monitor]"
+    end
+    user "ganglia"
+  else
+    package "ganglia-monitor"
+  end
 end
-
 directory "/etc/ganglia"
 
 # figure out which cluster(s) we should join
@@ -57,11 +67,22 @@ when true
   if node['ganglia']['server_host']
     gmond_collectors = [node['ganglia']['server_host']]
   elsif gmond_collectors.empty?
-    gmond_collectors = search(:node, "role:#{node['ganglia']['server_role']} AND chef_environment:#{node.chef_environment}").map {|node| node['ipaddress']}
+
+    # check node.chef_environment
+    gmond_collectors = search(:node, "roles:#{node['ganglia']['server_role']} AND chef_environment:#{node.chef_environment}").map {|node| node['ipaddress']}
+
+    # check if node.chef_environment is mapped to talk to a different environment
+    if node['ganglia']['extra_environments'].has_key?(node.chef_environment)
+      e = node['ganglia']['extra_environments'][node.chef_environment]
+      gmond_collectors << search(:node, "roles:#{node['ganglia']['server_role']} AND chef_environment:#{e}").map {|node| node['ipaddress']}
+    end
   end rescue NoMethodError
   if gmond_collectors.empty?
-     gmond_collectors = ["127.0.0.1"]
+    gmond_collectors = ["127.0.0.1"]
   end
+
+  gmond_collectors.flatten!
+  gmond_collectors.sort!
 
   template "/etc/ganglia/gmond.conf" do
     source "gmond_unicast.conf.erb"

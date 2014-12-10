@@ -2,6 +2,7 @@
 unless node['ganglia']['install_method'].nil?
   case node['platform']
   when "ubuntu", "debian"
+    puts "INSTALLING GMETAD FROM PACKAGE - INSTALL METHOD:#{node['ganglia']['install_method']}"
     package "gmetad"
   when "redhat", "centos", "fedora"
     include_recipe "ganglia::source"
@@ -26,17 +27,13 @@ else
   end
 end
 
-directory node['ganglia']['rrd_rootdir'] do
-  owner node['ganglia']['user']
-  recursive true
-end
 if node['ganglia']['enable_two_gmetads']
   directory node['ganglia']['two_gmetads']['empty_rrd_rootdir'] do
     owner node['ganglia']['user']
     recursive true
   end
 end
-
+require 'pry'
 # if we should use rrdcached, set it up here.
 if node['ganglia']['enable_rrdcached'] == true
   package "rrdcached" do
@@ -49,7 +46,7 @@ if node['ganglia']['enable_rrdcached'] == true
               :user => node['ganglia']['rrdcached']['user'],
               :main_socket => node['ganglia']['rrdcached']['main_socket'],
               :limited_socket => node['ganglia']['rrdcached']['limited_socket'],
-              :ganglia_rrds => node['ganglia']['rrdcached']['ganglia_rrds'],
+              :ganglia_rrds => node['ganglia']['rrd_datadir'],
               :timeout => node['ganglia']['rrdcached']['timeout'],
               :delay => node['ganglia']['rrdcached']['delay'],
             }
@@ -63,10 +60,11 @@ end
 
 case node['ganglia']['unicast']
 when true
-  gmond_collectors = search(:node, "role:#{node['ganglia']['server_role']} AND chef_environment:#{node.chef_environment}").map {|node| node['ipaddress']}
+  gmond_collectors = search(:node, "role:#{node['ganglia']['server_role']} AND chef_environment:#{node.chef_environment}").sort.map {|node| node['ipaddress']}
   if gmond_collectors.empty?
     gmond_collectors = ['127.0.0.1']
   end
+  include_recipe "ganglia::gmond_collector"
   template "/etc/ganglia/gmetad.conf" do
     source "gmetad.conf.erb"
     variables( :clusters => node['ganglia']['clusterport'].to_hash,
